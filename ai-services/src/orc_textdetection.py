@@ -58,12 +58,14 @@ Dependencies:
 
 import cv2
 import numpy as np
+import torch
 from ultralytics import YOLO
 import easyocr
 import re
 import requests
 import os
-from collections import defaultdict, deque
+from collections import defaultdict, deque, OrderedDict
+from scipy.spatial import distance as dist
 
 
 class LicensePlateDetector:
@@ -91,12 +93,23 @@ class LicensePlateDetector:
             print(f"Error loading model: {e}. Check your file path!")
             raise e
 
-        self.reader = easyocr.Reader(['en'], gpu=True)
+        # 1. MAC GPU OPTIMIZATION (MPS)
+        self.device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+        print(f"Using device: {self.device}")
+        self.model.to(self.device)
+
+        # 2. OCR OPTIMIZATION: Only use English to save memory/speed
+        self.reader = easyocr.Reader(['en'], gpu=(self.device == 'mps'))
 
         # 2. RELAXED: Indian plates can be 9 or 10 characters (e.g., DL3C 1234 or DL03CA 1234)
         self.plate_pattern = re.compile(r"^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$")
 
-        self.plate_history = defaultdict(lambda: deque(maxlen=15))
+        # 3. CENTROID TRACKER STATE
+        self.next_object_id = 0
+        self.objects = OrderedDict()
+        self.disappeared = OrderedDict()
+        self.max_disappeared = 10  # Frames a car can be missing before we delete it
+        self.plate_history = {}    # Maps object_id to deque
         self.plate_final = {}
 
         self.mapping_num_to_alpha = {"0": "O", "1": "I", "2": "Z", "5": "S", "6": "G", "8": "B"}
@@ -133,58 +146,144 @@ class LicensePlateDetector:
                 res[i] = self.mapping_alpha_to_num.get(res[i], res[i])
         return "".join(res)
 
+    def get_centroid(self, x1, y1, x2, y2):
+        return (int((x1 + x2) / 2.0), int((y1 + y2) / 2.0))
+
+    def register(self, centroid):
+        self.objects[self.next_object_id] = centroid
+        self.disappeared[self.next_object_id] = 0
+        self.plate_history[self.next_object_id] = deque(maxlen=15)
+        self.next_object_id += 1
+
+    def deregister(self, object_id):
+        del self.objects[object_id]
+        del self.disappeared[object_id]
+        if object_id in self.plate_history:
+            del self.plate_history[object_id]
+
+    def update_tracker(self, rects):
+        """Simple Centroid Tracking Logic"""
+        if len(rects) == 0:
+            for object_id in list(self.disappeared.keys()):
+                self.disappeared[object_id] += 1
+                if self.disappeared[object_id] > self.max_disappeared:
+                    self.deregister(object_id)
+            return self.objects
+
+        input_centroids = np.zeros((len(rects), 2), dtype="int")
+        for (i, (x1, y1, x2, y2)) in enumerate(rects):
+            input_centroids[i] = self.get_centroid(x1, y1, x2, y2)
+
+        if len(self.objects) == 0:
+            for i in range(0, len(input_centroids)):
+                self.register(input_centroids[i])
+        else:
+            object_ids = list(self.objects.keys())
+            object_centroids = list(self.objects.values())
+            D = dist.cdist(np.array(object_centroids), input_centroids)
+            rows = D.min(axis=1).argsort()
+            cols = D.argmin(axis=1)[rows]
+
+            used_rows = set()
+            used_cols = set()
+
+            for (row, col) in zip(rows, cols):
+                if row in used_rows or col in used_cols:
+                    continue
+                object_id = object_ids[row]
+                self.objects[object_id] = input_centroids[col]
+                self.disappeared[object_id] = 0
+                used_rows.add(row)
+                used_cols.add(col)
+
+            # Register new objects
+            unused_rows = set(range(0, D.shape[0])).difference(used_rows)
+            unused_cols = set(range(0, D.shape[1])).difference(used_cols)
+
+            if D.shape[0] >= D.shape[1]:
+                for row in unused_rows:
+                    object_id = object_ids[row]
+                    self.disappeared[object_id] += 1
+                    if self.disappeared[object_id] > self.max_disappeared:
+                        self.deregister(object_id)
+            else:
+                for col in unused_cols:
+                    self.register(input_centroids[col])
+
+        return self.objects
+
     def recognize_plate(self, plate_crop):
+        # OCR OPTIMIZATION: Check if crop is large enough to contain text
+        if plate_crop.shape[0] < 10 or plate_crop.shape[1] < 10: return ""
+
         processed = self.preprocess_for_ocr(plate_crop)
         if processed is None: return ""
 
-        try:
-            # paragraph=False prevents splitting text into different lines
-            results = self.reader.readtext(processed, detail=1, paragraph=False)
-            if not results: return ""
+        # Speed tweak: low_text and mag_ratio can speed up EasyOCR significantly
+        # detail=0 returns just the text list
+        results = self.reader.readtext(processed, detail=0, paragraph=False, mag_ratio=1.5)
+        return "".join(results) if results else ""
 
-            # Sort results by confidence and pick the best one
-            results.sort(key=lambda x: x[2], reverse=True)
-            raw_text = results[0][1]
-
-            clean_text = self.correct_plate_format(raw_text)
-            return clean_text
-        except:
-            return ""
-
-    def get_box_id(self, x1, y1, x2, y2):
-        # 3. FIXED: Increased tolerance to 50px so ID doesn't break during motion
-        return f"{int(x1 / 50)}_{int(y1 / 50)}"
-
-    def get_stable_plate(self, box_id, new_text):
+    def get_stable_plate(self, object_id, new_text):
         if len(new_text) > 5:  # Only save if we got a decent read
-            self.plate_history[box_id].append(new_text)
+            if object_id in self.plate_history:
+                self.plate_history[object_id].append(new_text)
             # Find the most frequent text in the last 15 frames
-            most_common = max(self.plate_history[box_id], key=self.plate_history[box_id].count)
-            self.plate_final[box_id] = most_common
-        return self.plate_final.get(box_id, "Scanning...")
+            if object_id in self.plate_history and self.plate_history[object_id]:
+                most_common = max(self.plate_history[object_id], key=self.plate_history[object_id].count)
+                self.plate_final[object_id] = most_common
+        return self.plate_final.get(object_id, "Scanning...")
 
     def process_frame(self, frame):
-        # Lower confidence to 0.2 to catch blurred plates
-        results = self.model(frame, verbose=True, conf=0.20)
-        detections = []
+        # Run YOLO on Mac GPU (MPS)
+        results = self.model(frame, verbose=False, device=self.device, conf=0.25)
+        
+        rects = []
+        # Map centroids back to boxes for cropping
+        box_map = [] 
 
         for result in results:
             for box in result.boxes:
-                coords = box.xyxy[0].tolist()
-                x1, y1, x2, y2 = map(int, coords)
+                coords = map(int, box.xyxy[0].tolist())
+                x1, y1, x2, y2 = coords
+                rects.append((x1, y1, x2, y2))
+                
+                # Store centroid -> box mapping
+                c = self.get_centroid(x1, y1, x2, y2)
+                box_map.append((c, (x1, y1, x2, y2)))
 
+        # Update tracker and get persistent IDs
+        tracked_objects = self.update_tracker(rects)
+        detections = []
+
+        for object_id, centroid in tracked_objects.items():
+            # Find the box closest to this centroid to perform OCR
+            # Since update_tracker aligns objects to input centroids, we look for exact match
+            matched_box = None
+            for (bc, bbox) in box_map:
+                if bc == tuple(centroid):
+                    matched_box = bbox
+                    break
+            
+            if matched_box:
+                x1, y1, x2, y2 = matched_box
+                
                 # Expand crop slightly to catch plate edges
                 pad = 5
                 h, w, _ = frame.shape
                 plate_crop = frame[max(0, y1 - pad):min(h, y2 + pad), max(0, x1 - pad):min(w, x2 + pad)]
 
                 raw_text = self.recognize_plate(plate_crop)
-                box_id = self.get_box_id(x1, y1, x2, y2)
-                stable_text = self.get_stable_plate(box_id, raw_text)
+                
+                # Apply format correction
+                clean_text = self.correct_plate_format(raw_text)
+                
+                # Stabilization
+                stable_text = self.get_stable_plate(object_id, clean_text)
 
                 detections.append({
                     'bbox': (x1, y1, x2, y2),
-                    'text': stable_text,
+                    'text': clean_text,
                     'stable_text': stable_text, # Added for compatibility with main.py
                     'is_valid': bool(self.plate_pattern.match(stable_text))
                 })

@@ -1,28 +1,38 @@
 import cv2
 import os
-from orc_textdetection import LicensePlateDetector
+import asyncio
+from processor import TrafficPipeline
 
-# 1. SETUP PATHS (Absolute paths are safer)
-# BASE_DIR is now the project root: /Volumes/Akash/Traffic_controll_system/ai-services
+# 1. SETUP PATHS
 BASE_DIR = "/Volumes/Akash/Traffic_controll_system/ai-services"
-VIDEO_PATH = os.path.join(BASE_DIR, "Data", "video.mp4")  # Changed back to video path
+VIDEO_PATH = os.path.join(BASE_DIR, "Data", "t.mp4")
+VEHICLE_WEIGHTS = os.path.join(BASE_DIR, "models", "weights", "yolov8n.pt")
+PLATE_WEIGHTS = os.path.join(BASE_DIR, "models", "weights", "best.pt")
+BACKEND_URL = "http://localhost:8080/api/detections"
 
-
-def test_detection():
+def run_test():
+    # Check files
+    if not os.path.exists(VEHICLE_WEIGHTS):
+        print(f"❌ ERROR: Vehicle model not found at {VEHICLE_WEIGHTS}")
+        return
+    if not os.path.exists(PLATE_WEIGHTS):
+        print(f"❌ ERROR: Plate model not found at {PLATE_WEIGHTS}")
+        return
     if not os.path.exists(VIDEO_PATH):
         print(f"❌ ERROR: Video file not found at {VIDEO_PATH}")
         return
 
-    print("Starting Video Detection...")
+    print("--- Starting Traffic Pipeline Test ---")
     
-    # Instantiate the detector
-    # Note: The model path is handled inside the class, or you can pass it if needed
-    detector = LicensePlateDetector()
+    # Initialize Pipeline
+    pipeline = TrafficPipeline(VEHICLE_WEIGHTS, PLATE_WEIGHTS, BACKEND_URL)
     
-    # Use the method from the class to run inference
-    detector.run_video_inference(VIDEO_PATH)
-
-    print("Test finished.")
+    # Run the async process
+    # Since process_stream is async, we need to run it in an event loop
+    try:
+        asyncio.run(pipeline.process_stream(VIDEO_PATH))
+    except KeyboardInterrupt:
+        print("Test stopped by user.")
 
 if __name__ == "__main__":
-    test_detection()
+    run_test()
