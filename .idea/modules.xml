@@ -2,7 +2,11 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+<<<<<<< HEAD
       <module fileurl="file://$PROJECT_DIR$/.idea/Traffic_controll_system.iml" filepath="$PROJECT_DIR$/.idea/Traffic_controll_system.iml" />
+=======
+      <module fileurl="file://$PROJECT_DIR$/.idea/minor.iml" filepath="$PROJECT_DIR$/.idea/minor.iml" />
+>>>>>>> 48bccc1 (incomplete test files)
     </modules>
   </component>
 </project>

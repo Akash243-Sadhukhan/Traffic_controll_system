@@ -14,8 +14,16 @@ and includes helpers to stabilize OCR results and to safely crop image regions.
 import asyncio
 import re
 import logging
+<<<<<<< HEAD
 from collections import OrderedDict, defaultdict, deque
 from datetime import datetime
+=======
+import os
+import sys
+from collections import OrderedDict, defaultdict, deque, Counter
+from datetime import datetime
+from signal_controller import SignalController
+>>>>>>> 48bccc1 (incomplete test files)
 
 # Dependency checks with helpful error messages
 try:
@@ -53,7 +61,11 @@ class TrafficPipeline:
         asyncio.run(pipeline.process_stream(0))  # use 0 for default webcam
     """
 
+<<<<<<< HEAD
     def __init__(self, vehicle_model_path, plate_model_path, backend_url):
+=======
+    def __init__(self, vehicle_model_path, plate_model_path, backend_url, *, show_window: bool = True, log_plates: bool = True):
+>>>>>>> 48bccc1 (incomplete test files)
         """Initialize models and engines used by the pipeline.
 
         Args:
@@ -61,8 +73,31 @@ class TrafficPipeline:
             plate_model_path (str): Path or model identifier for license-plate YOLO model.
             backend_url (str): Base URL for backend service (e.g., 'http://host:8080').
         """
+<<<<<<< HEAD
         # Prefer MPS on macOS when available, fallback to CPU
         self.device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+=======
+        # Prefer explicit override via env, then CUDA, then MPS (Apple), otherwise CPU
+        override = os.getenv("AI_DEVICE", "").lower()
+        self.device = None
+        if override:
+            if override == "cuda" and torch.cuda.is_available():
+                self.device = "cuda"
+            elif override == "mps" and getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+                self.device = "mps"
+            elif override == "cpu":
+                self.device = "cpu"
+            else:
+                logger.warning("Requested AI_DEVICE=%s is not available; falling back to auto device.", override)
+
+        if self.device is None:
+            if torch.cuda.is_available():
+                self.device = "cuda"
+            elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+                self.device = "mps"
+            else:
+                self.device = "cpu"
+>>>>>>> 48bccc1 (incomplete test files)
         logger.info(f"🚀 AI Engine Active on: {self.device}")
 
         # 1. Models
@@ -78,16 +113,64 @@ class TrafficPipeline:
             self.plate_model.to(self.device)
         except Exception:
             logger.debug("Could not move plate_model to device, continuing with default device.")
+<<<<<<< HEAD
         
         # 2. OCR Engine (Mac Optimized)
         # easyocr's Reader will choose GPU when gpu=True and a compatible GPU/back-end exists
         self.reader = easyocr.Reader(['en'], gpu=(self.device == 'mps'))
         self.backend_url = backend_url
+=======
+
+        # 2. OCR Engine
+        # easyocr's Reader benefits mainly from CUDA; other backends fall back to CPU.
+        ocr_use_gpu = torch.cuda.is_available()
+        self.reader = easyocr.Reader(['en'], gpu=ocr_use_gpu, verbose=False)
+        # Restrict OCR to license-plate-like characters for speed and stability
+        self.ocr_allowlist = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        self.backend_url = backend_url
+        self.show_window = show_window
+        self.log_plates = log_plates
+        self.window_name = os.getenv("WINDOW_NAME", "Traffic System v1.0")
+>>>>>>> 48bccc1 (incomplete test files)
 
         # 3. Tracking & History (from orc.py)
         self.tracker = OrderedDict()
         self.plate_history = defaultdict(lambda: deque(maxlen=15))
         self.next_id = 0
+<<<<<<< HEAD
+=======
+        self._httpx_client = None
+
+        # 4. Smart Traffic Signal Controller
+        # Default intersection layout (can be configured via environment or API later)
+        default_lanes = {
+            "North Lane": {"polygon": [[300, 100], [500, 100], [450, 300], [250, 300]], "light": "RED"},
+            "East Lane": {"polygon": [[600, 200], [800, 200], [800, 400], [600, 400]], "light": "RED"},
+            "South Lane": {"polygon": [[300, 600], [500, 600], [450, 400], [250, 400]], "light": "RED"},
+            "West Lane": {"polygon": [[100, 200], [300, 200], [300, 400], [100, 400]], "light": "RED"}
+        }
+        self.signal_controller = SignalController(
+            lanes=default_lanes,
+            default_green_time=8,
+            min_green_time=4,
+            yellow_time=2
+        )
+
+    def _can_use_highgui(self) -> bool:
+        """Return True if it's safe to call OpenCV HighGUI (imshow/namedWindow).
+
+        In many Docker/Linux environments, calling HighGUI functions aborts the process
+        (Qt plugin / X11 not available). We avoid calling HighGUI unless we believe a
+        display is available.
+        """
+        if not self.show_window:
+            return False
+        if sys.platform.startswith("linux"):
+            # In Linux, HighGUI typically requires a display server.
+            return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+        # macOS/Windows don't use DISPLAY in the same way.
+        return True
+>>>>>>> 48bccc1 (incomplete test files)
 
     # --- OCR helpers ---
     def preprocess_for_ocr(self, plate_img):
@@ -131,6 +214,37 @@ class TrafficPipeline:
         cleaned = re.sub(r'[^A-Z0-9]', '', text.upper())
         return cleaned
 
+<<<<<<< HEAD
+=======
+    def _update_plate_history(self, key, plate_text: str) -> str:
+        """Update and smooth plate text history for a spatial track.
+
+        Args:
+            key: Hashable track key (e.g., quantized plate position).
+            plate_text (str): Newly read plate text.
+        Returns:
+            str: Stabilized plate text once it has been consistently observed;
+                 empty string otherwise.
+        """
+        if not plate_text:
+            return ""
+
+        history = self.plate_history[key]
+        history.append(plate_text)
+
+        # Require a short warm‑up before trusting the value
+        if len(history) < 4:
+            return ""
+
+        counts = Counter(history)
+        candidate, count = counts.most_common(1)[0]
+
+        # Require both a minimum count and majority agreement
+        if count >= max(3, len(history) // 2 + 1):
+            return candidate
+        return ""
+
+>>>>>>> 48bccc1 (incomplete test files)
     async def process_stream(self, video_source):
         """Read frames from a video source and process detections in a loop.
 
@@ -142,6 +256,16 @@ class TrafficPipeline:
             video_source (int | str): OpenCV video source (0 for webcam, or filepath/URL).
         """
         cap = cv2.VideoCapture(video_source)
+<<<<<<< HEAD
+=======
+
+        window_ok = False
+        if self._can_use_highgui():
+            # Important: in some environments a HighGUI call can abort the process.
+            # We only attempt it when a display looks available.
+            cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
+            window_ok = True
+>>>>>>> 48bccc1 (incomplete test files)
         
         while cap.isOpened():
             ret, frame = cap.read()
@@ -150,10 +274,26 @@ class TrafficPipeline:
             # STEP 1: Detect Vehicles
             v_results = self.vehicle_model(frame, conf=0.5, verbose=False, device=self.device)
             
+<<<<<<< HEAD
+=======
+            vehicle_centers = []
+            
+>>>>>>> 48bccc1 (incomplete test files)
             for res in v_results:
                 for box in res.boxes:
                     vx1, vy1, vx2, vy2 = map(int, box.xyxy[0])
                     v_type = res.names[int(box.cls[0])]
+<<<<<<< HEAD
+=======
+                    
+                    center_x = (vx1 + vx2) // 2
+                    center_y = (vy1 + vy2) // 2
+                    vehicle_centers.append((center_x, center_y))
+
+                    # Draw vehicle bounding box and label
+                    cv2.rectangle(frame, (vx1, vy1), (vx2, vy2), (0, 255, 0), 2)
+                    cv2.putText(frame, v_type, (vx1, vy1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+>>>>>>> 48bccc1 (incomplete test files)
 
                     # STEP 2: ROI - Crop the Vehicle
                     car_crop = frame[vy1:vy2, vx1:vx2]
@@ -168,6 +308,7 @@ class TrafficPipeline:
                             h_c, w_c = car_crop.shape[:2]
                             px1, py1 = max(0, px1), max(0, py1)
                             px2, py2 = min(w_c - 1, px2), min(h_c - 1, py2)
+<<<<<<< HEAD
                             if px2 <= px1 or py2 <= py1:
                                 continue
                             plate_crop = car_crop[py1:py2, px1:px2]
@@ -180,18 +321,83 @@ class TrafficPipeline:
                             # Prepare Payload
                             payload = {
                                 "plateNumber": raw_text,
+=======
+                            abs_px1, abs_py1 = vx1 + px1, vy1 + py1
+                            abs_px2, abs_py2 = vx1 + px2, vy1 + py2
+
+                            if px2 <= px1 or py2 <= py1:
+                                continue
+
+                            # Skip extremely small plate crops (typically just noise)
+                            if (px2 - px1) * (py2 - py1) < 400:
+                                continue
+
+                            plate_crop = car_crop[py1:py2, px1:px2]
+
+                            # STEP 4: OCR & Stabilization
+                            raw_text = self.recognize_and_clean(plate_crop)
+                            track_key = (abs_px1 // 50, abs_py1 // 50)
+                            stable_text = self._update_plate_history(track_key, raw_text)
+
+                            # Draw plate bounding box and the most stable text we have
+                            display_text = stable_text or raw_text
+                            cv2.rectangle(frame, (abs_px1, abs_py1), (abs_px2, abs_py2), (255, 0, 255), 2)
+                            if display_text:
+                                cv2.putText(
+                                    frame,
+                                    display_text,
+                                    (abs_px1, abs_py1 - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.5,
+                                    (255, 0, 255),
+                                    2,
+                                )
+
+                            # Only send when OCR is stable to avoid flicker and duplicates
+                            if not stable_text:
+                                continue
+
+                            # Avoid resending the same stable plate for this track
+                            last_sent = self.tracker.get(track_key)
+                            if last_sent == stable_text:
+                                continue
+                            self.tracker[track_key] = stable_text
+                            if self.log_plates:
+                                logger.info("Plate detected: %s", stable_text)
+
+                            # Prepare Payload
+                            payload = {
+                                "plateNumber": stable_text,
+>>>>>>> 48bccc1 (incomplete test files)
                                 "vehicleType": v_type,
                                 "locationId": "INTERSECTION_A1",
                                 "timestamp": datetime.now().isoformat()
                             }
                             asyncio.create_task(self.send_data(payload))
 
+<<<<<<< HEAD
             # STEP 5: Visual Feedback
             cv2.imshow('Traffic System v1.0', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'): break
 
         cap.release()
         cv2.destroyAllWindows()
+=======
+            # STEP 4.5: Update Signal Controller
+            self.signal_controller.update_counts(vehicle_centers)
+            self.signal_controller.tick()
+            frame = self.signal_controller.draw(frame)
+
+            # STEP 5: Visual Feedback
+            if window_ok:
+                cv2.imshow(self.window_name, frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+
+        cap.release()
+        if window_ok:
+            cv2.destroyAllWindows()
+>>>>>>> 48bccc1 (incomplete test files)
 
     def recognize_and_clean(self, plate_img):
         """Perform OCR on a plate image and clean the result for backend ingestion.
@@ -212,7 +418,16 @@ class TrafficPipeline:
 
         proc = self.preprocess_for_ocr(plate_img)
         try:
+<<<<<<< HEAD
             results = self.reader.readtext(proc, detail=0, paragraph=False)
+=======
+            results = self.reader.readtext(
+                proc,
+                detail=0,
+                paragraph=False,
+                allowlist=self.ocr_allowlist,
+            )
+>>>>>>> 48bccc1 (incomplete test files)
         except Exception as e:
             logger.exception("easyocr.readtext failed: %s", e)
             results = []
@@ -239,10 +454,21 @@ class TrafficPipeline:
             return
 
         try:
+<<<<<<< HEAD
             async with httpx.AsyncClient(timeout=10.0) as client:
                 endpoint = self.backend_url.rstrip('/') + '/api/detections'
                 resp = await client.post(endpoint, json=payload)
                 if resp.status_code >= 400:
                     logger.warning("Backend returned %s for payload %s", resp.status_code, payload)
+=======
+            if self._httpx_client is None:
+                self._httpx_client = httpx.AsyncClient(timeout=10.0)
+
+            base = self.backend_url.rstrip('/')
+            endpoint = base if base.endswith('/api/detections') else (base + '/api/detections')
+            resp = await self._httpx_client.post(endpoint, json=payload)
+            if resp.status_code >= 400:
+                logger.warning("Backend returned %s for payload %s", resp.status_code, payload)
+>>>>>>> 48bccc1 (incomplete test files)
         except Exception as e:
             logger.exception("Failed sending payload to backend: %s", e)

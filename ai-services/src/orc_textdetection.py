@@ -217,7 +217,12 @@ class LicensePlateDetector:
         if plate_crop.shape[0] < 10 or plate_crop.shape[1] < 10: return ""
 
         processed = self.preprocess_for_ocr(plate_crop)
+<<<<<<< HEAD
         if processed is None: return ""
+=======
+        if processed is None: 
+            return ""
+>>>>>>> 48bccc1 (incomplete test files)
 
         # Speed tweak: low_text and mag_ratio can speed up EasyOCR significantly
         # detail=0 returns just the text list

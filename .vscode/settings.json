@@ -1,3 +1,16 @@
 {
+<<<<<<< HEAD
+=======
+    "python.defaultInterpreterPath": "${workspaceFolder}/ai-services/venv/bin/python",
+    "python-envs.pythonProjects": [
+        {
+            "path": "${workspaceFolder}/ai-services",
+            "pythonPath": "${workspaceFolder}/ai-services/venv/bin/python"
+        }
+    ],
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/ai-services/src"
+    ],
+>>>>>>> 48bccc1 (incomplete test files)
     "java.compile.nullAnalysis.mode": "automatic"
 }

@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-multipart
+# Add other dependencies if you find them missing later
+
+opencv-python
+numpy
+ultralytics
+easyocr
+httpx
+requests
+fastapi
+uvicorn[standard]
+# Add your model dependencies if needed, e.g.:
+# torch
+# opencv-python

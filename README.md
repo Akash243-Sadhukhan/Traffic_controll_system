@@ -141,4 +141,8 @@ If you'd like, I can:
 - Add a sample script to `ai-services` that runs a single-frame test and asserts output ✅
 - Create Dockerfiles and a `docker-compose.yml` to run the whole stack locally ✅
 
+<<<<<<< HEAD
 Let me know what you want next! ✨
+=======
+
+>>>>>>> 48bccc1 (incomplete test files)
