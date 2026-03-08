@@ -1,0 +1,22 @@
+services:
+  backend-service:
+    build: ./backend-services
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://akash:password@cluster.mongodb.net/traffic_db
+    restart: always
+
+  ai-service:
+    build: ./ai-services
+    ports:
+      - "8000:8000"
+    environment:
+      - BACKEND_URL=http://backend-service:8080
+      - SHOW_WINDOW=0
+      - YOLO_CONFIG_DIR=/app/.ultralytics
+    depends_on:
+      - backend-service
+    volumes:
+      - ./ai-services/Data:/app/Data:ro
+      - ./ai-services/models:/app/models

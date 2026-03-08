@@ -1,0 +1,13 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/ai-services/venv/bin/python",
+    "python-envs.pythonProjects": [
+        {
+            "path": "${workspaceFolder}/ai-services",
+            "pythonPath": "${workspaceFolder}/ai-services/venv/bin/python"
+        }
+    ],
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/ai-services/src"
+    ],
+    "java.compile.nullAnalysis.mode": "automatic"
+}
