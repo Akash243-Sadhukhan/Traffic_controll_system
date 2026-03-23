@@ -1,0 +1,11 @@
+opencv-python
+numpy
+ultralytics
+easyocr
+httpx
+requests
+fastapi
+uvicorn[standard]
+# Add your model dependencies if needed, e.g.:
+# torch
+# opencv-python

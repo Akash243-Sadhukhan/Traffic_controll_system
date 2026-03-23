@@ -1,53 +1,53 @@
 package com.traffic.backend_services.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-import java.util.stream.Collectors;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Centralised exception handling for all REST controllers.
+ * Global exception handler that maps exceptions to RFC 7807 ProblemDetail responses.
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ---- 404 — Detection Not Found ----
-    @ExceptionHandler(DetectionNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(DetectionNotFoundException ex) {
-        ErrorResponse body = ErrorResponse.builder()
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .build();
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
-    }
-
-    // ---- 400 — Bean Validation Errors ----
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        String details = ex.getBindingResult().getFieldErrors().stream()
-                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
-                .collect(Collectors.joining("; "));
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ProblemDetail handleValidationExceptions(MethodArgumentNotValidException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Invalid request payload"
+        );
+        problemDetail.setType(URI.create("https://traffic-system.com/errors/bad-request"));
+        problemDetail.setTitle("Validation Failed");
 
-        ErrorResponse body = ErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Validation Failed")
-                .message(details)
-                .build();
-        return ResponseEntity.badRequest().body(body);
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        // Add the validation errors as an extension property
+        problemDetail.setProperty("errors", errors);
+        return problemDetail;
     }
 
-    // ---- 500 — Catch-all ----
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
-        ErrorResponse body = ErrorResponse.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .message(ex.getMessage())
-                .build();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ProblemDetail handleGenericException(Exception ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred."
+        );
+        problemDetail.setType(URI.create("https://traffic-system.com/errors/internal-server-error"));
+        problemDetail.setTitle("Internal Server Error");
+        // Don't expose internal stack traces to the client in production
+        return problemDetail;
     }
 }

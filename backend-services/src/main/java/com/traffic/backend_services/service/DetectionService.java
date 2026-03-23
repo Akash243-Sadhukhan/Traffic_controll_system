@@ -82,8 +82,8 @@ public class DetectionService {
         d.setVehicleType(req.getVehicleType());
         d.setLocationId(req.getLocationId());
 
-        if (req.getTimestamp() != null && !req.getTimestamp().isBlank()) {
-            d.setTimestamp(LocalDateTime.parse(req.getTimestamp()));
+        if (req.getTimestamp() != null) {
+            d.setTimestamp(req.getTimestamp());
         }
         return d;
     }

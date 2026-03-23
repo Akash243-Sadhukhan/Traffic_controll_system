@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Traffic Control System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.5.0/Recharts.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+  :root {
+    --bg:      #0a0a0f;
+    --surface: #111118;
+    --border:  #1e2a3a;
+    --accent:  #38bdf8;
+    --green:   #34d399;
+    --yellow:  #fbbf24;
+    --red:     #f87171;
+    --purple:  #a78bfa;
+    --text:    #e8f4fd;
+    --muted:   #4b6a8a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; min-height: 100vh; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .big { font-size: 42px; font-weight: 700; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-green  { background: rgba(52,211,153,.15); color: var(--green); }
+  .badge-yellow { background: rgba(251,191,36,.15);  color: var(--yellow); }
+  .badge-red    { background: rgba(248,113,113,.15); color: var(--red); }
+  .badge-blue   { background: rgba(56,189,248,.15);  color: var(--accent); }
+  .badge-purple { background: rgba(167,139,250,.15); color: var(--purple); }
+
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .live-dot.green { background: var(--green); animation: pulse 1.4s infinite; }
+  .live-dot.red   { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.5)} }
+
+  .collapsible-header {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+  }
+  .collapsible-header:hover { color: var(--accent); }
+  .collapsible-body { overflow: hidden; transition: max-height .3s ease; }
+  .collapsible-body.open { max-height: 2000px; }
+  .collapsible-body.closed { max-height: 0; }
+
+  .anpr-row td { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid var(--border); transition: background .2s; }
+  .anpr-row.flagged { background: rgba(248,113,113,.08); }
+  .anpr-row.new-row { animation: slideIn .3s ease; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+  .q-bar-track { background: var(--border); border-radius: 4px; height: 8px; }
+  .q-bar-fill  { height: 100%; border-radius: 4px; transition: width .5s ease; }
+
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 4px;
+    background: var(--border); border-radius: 4px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+  }
+  button { cursor: pointer; border: none; border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 600; padding: 7px 14px; transition: opacity .15s, transform .1s; }
+  button:hover { opacity: .85; }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #0a0a0f; }
+  .btn-emergency { background: var(--yellow); color: #0a0a0f; }
+  .btn-danger  { background: var(--red);    color: #fff; }
+  .btn-ghost   { background: var(--border); color: var(--text); }
+  .btn-purple  { background: var(--purple); color: #0a0a0f; }
+
+  .reconnect-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 99;
+    background: var(--red); color: #fff; text-align: center;
+    padding: 8px; font-size: 13px; display: none;
+  }
+  .spinner { animation: spin .8s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 50; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; }
+
+  select { background: var(--border); color: var(--text); border: none; border-radius: 6px; padding: 5px 10px; font-family: inherit; font-size: 12px; }
+  input[type=text] { background: var(--border); color: var(--text); border: none; border-radius: 6px; padding: 6px 10px; font-family: inherit; font-size: 12px; outline: none; width: 100%; }
+</style>
+</head>
+<body>
+
+<div id="reconnect-banner" class="reconnect-banner">⚠ WebSocket disconnected — reconnecting…</div>
+
+<div style="max-width:1400px;margin:0 auto;padding:20px">
+
+  <!-- ── Header ── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="font-size:28px">🚦</div>
+      <div>
+        <div style="font-size:16px;font-weight:700">Smart Traffic Control System</div>
+        <div style="font-size:11px;color:var(--muted)">Real-time ANPR · SUMO Simulation · RL Signal Control</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div id="ws-status" style="display:flex;align-items:center;gap:6px;font-size:12px">
+        <span class="live-dot red" id="ws-dot"></span>
+        <span id="ws-label">Connecting…</span>
+      </div>
+      <span class="badge badge-blue" id="mode-badge">FIXED</span>
+    </div>
+  </div>
+
+  <!-- ── Metrics Row ── -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px">
+    <div class="card" style="text-align:center">
+      <div class="label">Total Detections</div>
+      <div class="big" id="m-detections">—</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="label">Count Events</div>
+      <div class="big" id="m-events">—</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="label">RL Decisions</div>
+      <div class="big" id="m-decisions">—</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="label">Model Usage</div>
+      <div class="big" id="m-usage" style="color:var(--green)">—</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="label">Most Congested</div>
+      <div class="big" style="font-size:26px" id="m-congested">—</div>
+    </div>
+  </div>
+
+  <!-- ── Arm Queue Bar Chart ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="label">Queue Per Arm (live)</div>
+    <div id="arm-bars" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ── ANPR + Line Chart ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+
+    <!-- ANPR table -->
+    <div class="card" style="overflow:hidden">
+      <div class="label">Live ANPR Detections</div>
+      <div style="overflow-y:auto;max-height:280px;margin-top:6px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="font-size:10px;color:var(--muted)">
+              <th style="text-align:left;padding:6px 12px">Time</th>
+              <th style="text-align:left;padding:6px 12px">Plate</th>
+              <th style="text-align:left;padding:6px 12px">Type</th>
+              <th style="padding:6px 12px">Flag</th>
+            </tr>
+          </thead>
+          <tbody id="anpr-body">
+            <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Waiting for data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Vehicle count timeline -->
+    <div class="card">
+      <div class="label">Vehicle Count Timeline</div>
+      <div id="line-chart" style="margin-top:8px;height:272px"></div>
+    </div>
+
+  </div>
+
+  <!-- ── AI Input Source ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="collapsible-header" onclick="toggleSection('source')">
+      <div class="label" style="margin:0">AI Input Source</div>
+      <span id="source-toggle">▼</span>
+    </div>
+    <div class="collapsible-body open" id="source-body" style="margin-top:14px">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="src" value="simulation" checked onchange="handleSourceChange(this)"/> Simulation
+        </label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="src" value="camera" onchange="handleSourceChange(this)"/> Camera
+        </label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="radio" name="src" value="video" onchange="handleSourceChange(this)"/> Video File
+        </label>
+      </div>
+
+      <div id="src-camera" style="display:none;margin-top:12px;display:none;gap:10px;align-items:center">
+        <span style="font-size:12px">Camera index:</span>
+        <select id="cam-index"><option>0</option><option>1</option><option>2</option><option>3</option></select>
+        <button class="btn-primary" onclick="applySource()">Connect</button>
+      </div>
+
+      <div id="src-video" style="display:none;margin-top:12px">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:12px">Available:</span>
+          <select id="video-select"><option value="">—</option></select>
+          <span style="font-size:12px">or path:</span>
+          <input type="text" id="video-path" placeholder="Data/video.mp4" style="max-width:200px"/>
+          <button class="btn-primary" onclick="applySource()">Load</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;align-items:center;gap:12px">
+        <span id="src-switch-spinner" style="display:none" class="spinner">↻</span>
+        <span id="src-status" style="font-size:12px;color:var(--green)">🟢 SIMULATION mode active</span>
+        <span style="font-size:12px;color:var(--muted)">Frames: <span id="src-frames">0</span></span>
+      </div>
+      <div id="src-error" style="color:var(--red);font-size:12px;margin-top:6px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- ── RL Signal Controller ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="collapsible-header" onclick="toggleSection('rl')">
+      <div class="label" style="margin:0">RL Signal Controller</div>
+      <span id="rl-toggle">▼</span>
+    </div>
+    <div class="collapsible-body open" id="rl-body" style="margin-top:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- Model status -->
+        <div>
+          <div class="label">Model Status</div>
+          <div style="font-size:13px;line-height:1.8">
+            <div>Status: <span id="rl-loaded">⬜ Unknown</span></div>
+            <div>Decisions made: <span id="rl-total-dec">—</span></div>
+            <div>Model usage: <span id="rl-usage">—</span></div>
+            <div>Fallback count: <span id="rl-fallbacks">—</span></div>
+          </div>
+        </div>
+        <!-- Last decision -->
+        <div>
+          <div class="label">Last Decision</div>
+          <div style="font-size:13px;line-height:1.8">
+            <div>Green arm: <span id="rl-arm" style="color:var(--green);font-weight:700">—</span></div>
+            <div>Duration: <span id="rl-dur">—</span></div>
+            <div>Confidence: <span id="rl-conf">—</span></div>
+            <div>Fallback: <span id="rl-fb">—</span></div>
+            <div style="color:var(--muted);font-size:11px;margin-top:4px" id="rl-reason">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q-value bars -->
+      <div style="margin-top:16px">
+        <div class="label">Q-Values (last decision)</div>
+        <div id="q-bars" style="margin-top:8px">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:10px">
+        <button class="btn-ghost" onclick="reloadRLModel()">🔄 Reload Model</button>
+        <button class="btn-purple" onclick="openDecisionHistory()">📊 Decision History</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Traffic Control Panel ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="collapsible-header" onclick="toggleSection('ctrl')">
+      <div class="label" style="margin:0">Traffic Control Panel</div>
+      <span id="ctrl-toggle">▼</span>
+    </div>
+    <div class="collapsible-body open" id="ctrl-body" style="margin-top:14px">
+      <!-- Spawn rate -->
+      <div style="margin-bottom:18px">
+        <div class="label">Spawn Rate</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="font-size:11px;color:var(--muted)">5</span>
+          <input type="range" id="rate-slider" min="5" max="60" value="20" oninput="ratePreview(this.value)" style="flex:1"/>
+          <span style="font-size:11px;color:var(--muted)">60</span>
+          <span id="rate-val" style="font-weight:700;min-width:80px">20 veh/min</span>
+          <button class="btn-primary" id="btn-rate" onclick="applyRate()">Apply</button>
+        </div>
+      </div>
+
+      <!-- Signal mode -->
+      <div style="margin-bottom:18px">
+        <div class="label">Signal Mode</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="radio" name="smode" value="FIXED" checked/> FIXED
+          </label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="radio" name="smode" value="ADAPTIVE"/> ADAPTIVE
+          </label>
+          <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="radio" name="smode" value="RL"/> RL
+          </label>
+          <button class="btn-ghost" id="btn-mode" onclick="applyMode()">Set Mode</button>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div style="margin-bottom:14px">
+        <div class="label">Quick Actions</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-emergency" id="btn-emg" onclick="simAction('emergency')">🚨 Emergency Vehicle</button>
+          <button class="btn-danger"   id="btn-flg" onclick="simAction('flagged')">🔴 Spawn Flagged</button>
+          <button class="btn-ghost"    id="btn-rst" onclick="simAction('reset')">↺ Reset Rate</button>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div style="font-size:12px;color:var(--muted)">
+        <span>Last command: </span><span id="last-cmd" style="color:var(--text)">—</span>
+        <span style="margin-left:16px">Status: </span><span id="cmd-status">—</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<!-- ── Decision History Modal ── -->
+<div class="modal-overlay" id="hist-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-weight:700">RL Decision History (last 20)</div>
+      <button class="btn-ghost" onclick="closeModal()" style="padding:4px 10px">✕</button>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="color:var(--muted)">
+          <th style="text-align:left;padding:6px 10px">Time</th>
+          <th style="text-align:left;padding:6px 10px">Arm</th>
+          <th style="padding:6px 10px">Duration</th>
+          <th style="padding:6px 10px">Confidence</th>
+          <th style="padding:6px 10px">Fallback</th>
+        </tr>
+      </thead>
+      <tbody id="hist-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════
+const S = {
+  connected: false,
+  stats: {},
+  detections: [],
+  countHistory: [],
+  armCounts: {north:0, south:0, east:0, west:0},
+  rlDecision: null,
+  rlStats: {},
+  rlStatus: {},
+};
+
+const ENDPOINTS = {
+  backend: 'http://localhost:8080',
+  ai:      'http://localhost:8001',
+};
+
+// ══════════════════════════════════════════════════════════════════
+// WEBSOCKET
+// ══════════════════════════════════════════════════════════════════
+let stompClient = null;
+let reconnectTimer = null;
+
+function connectWS() {
+  const sock = new SockJS(ENDPOINTS.backend + '/ws');
+  stompClient = Stomp.over(sock);
+  stompClient.debug = null;
+
+  stompClient.connect({}, () => {
+    S.connected = true;
+    document.getElementById('ws-dot').className = 'live-dot green';
+    document.getElementById('ws-label').textContent = 'LIVE';
+    document.getElementById('reconnect-banner').style.display = 'none';
+    clearTimeout(reconnectTimer);
+
+    stompClient.subscribe('/topic/live', msg => {
+      try { processWSMessage(JSON.parse(msg.body)); } catch(e) {}
+    });
+  }, () => {
+    S.connected = false;
+    document.getElementById('ws-dot').className = 'live-dot red';
+    document.getElementById('ws-label').textContent = 'Disconnected';
+    document.getElementById('reconnect-banner').style.display = 'block';
+    reconnectTimer = setTimeout(connectWS, 3000);
+  });
+}
+
+function processWSMessage(data) {
+  if (data.stats)        updateStats(data.stats);
+  if (data.detections)   updateDetections(data.detections);
+  if (data.vehicleCount && data.vehicleCount.armCounts) {
+    S.armCounts = data.vehicleCount.armCounts;
+    const total = data.vehicleCount.totalVehicles || 0;
+    S.countHistory.push({t: data.vehicleCount.timestamp, v: total});
+    if (S.countHistory.length > 20) S.countHistory.shift();
+    renderCountChart();
+  }
+  if (data.signalDecision) updateRLDecision(data.signalDecision);
+  renderArmBars();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════════════════════
+function updateStats(s) {
+  S.stats = s;
+  setText('m-detections', s.totalDetections ?? '—');
+  setText('m-events',     s.totalVehicleCountEvents ?? '—');
+  setText('m-decisions',  s.totalSignalDecisions ?? '—');
+  setText('m-usage',      s.modelUsageRate != null ? s.modelUsageRate.toFixed(1) + '%' : '—');
+  setText('m-congested',  s.mostCongestedArm ? s.mostCongestedArm.toUpperCase() : '—');
+
+  const mode = s.activeMode || 'FIXED';
+  setText('mode-badge', mode);
+  document.getElementById('mode-badge').className =
+    'badge ' + (mode==='RL'?'badge-purple':mode==='ADAPTIVE'?'badge-yellow':'badge-blue');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// DETECTIONS TABLE
+// ══════════════════════════════════════════════════════════════════
+const seenPlates = new Set();
+
+function updateDetections(detections) {
+  const tbody = document.getElementById('anpr-body');
+  const newOnes = detections.filter(d => !seenPlates.has(d.id));
+  if (!newOnes.length) return;
+
+  // clear placeholder
+  if (tbody.children[0] && tbody.children[0].querySelector('[colspan]')) tbody.innerHTML = '';
+
+  newOnes.forEach(d => {
+    seenPlates.add(d.id);
+    const tr = document.createElement('tr');
+    tr.className = 'anpr-row new-row' + (d.flagged ? ' flagged' : '');
+    const t = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : '—';
+    tr.innerHTML = `
+      <td>${t}</td>
+      <td style="font-weight:600;color:var(--accent)">${d.plateNumber||'—'}</td>
+      <td><span class="badge badge-blue">${d.vehicleType||'—'}</span></td>
+      <td style="text-align:center">${d.flagged ? '<span class="badge badge-red">⚠ FLAGGED</span>' : ''}</td>`;
+    tbody.insertBefore(tr, tbody.firstChild);
+    while (tbody.children.length > 50) tbody.removeChild(tbody.lastChild);
+    setTimeout(() => tr.classList.remove('new-row'), 1000);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ARM BARS
+// ══════════════════════════════════════════════════════════════════
+function renderArmBars() {
+  const arms = ['north','south','east','west'];
+  const max = Math.max(10, ...arms.map(a => S.armCounts[a]||0));
+  document.getElementById('arm-bars').innerHTML = arms.map(arm => {
+    const c = S.armCounts[arm] || 0;
+    const pct = ((c/max)*100).toFixed(1);
+    const color = c <= 3 ? 'var(--green)' : c <= 7 ? 'var(--yellow)' : 'var(--red)';
+    return `<div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+        <span style="text-transform:uppercase;color:var(--muted)">${arm}</span>
+        <span style="font-weight:700;color:${color}">${c}</span>
+      </div>
+      <div class="q-bar-track">
+        <div class="q-bar-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// COUNT LINE CHART (canvas-based, no external lib needed)
+// ══════════════════════════════════════════════════════════════════
+function renderCountChart() {
+  const el = document.getElementById('line-chart');
+  if (!el.querySelector('canvas')) {
+    el.innerHTML = '<canvas id="cnt-canvas" style="width:100%;height:100%"></canvas>';
+  }
+  const canvas = document.getElementById('cnt-canvas');
+  canvas.width  = el.clientWidth  || 400;
+  canvas.height = el.clientHeight || 272;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const data = S.countHistory;
+  if (data.length < 2) {
+    ctx.fillStyle = '#4b6a8a'; ctx.font = '12px JetBrains Mono';
+    ctx.fillText('Waiting for data…', 20, canvas.height/2); return;
+  }
+
+  const W = canvas.width, H = canvas.height;
+  const pad = {t:10, b:20, l:35, r:10};
+  const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
+  const maxV = Math.max(...data.map(d=>d.v), 1);
+
+  const toX = i => pad.l + (i / (data.length-1)) * iW;
+  const toY = v => pad.t + iH - (v/maxV)*iH;
+
+  // Grid lines
+  ctx.strokeStyle = '#1e2a3a'; ctx.lineWidth = 1;
+  [0,.25,.5,.75,1].forEach(f => {
+    const y = pad.t + iH*(1-f);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W-pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#4b6a8a'; ctx.font = '10px JetBrains Mono';
+    ctx.fillText(Math.round(maxV*f), 2, y+4);
+  });
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t+iH);
+  grad.addColorStop(0, 'rgba(56,189,248,.25)');
+  grad.addColorStop(1, 'rgba(56,189,248,0)');
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(data[0].v));
+  data.forEach((d,i) => ctx.lineTo(toX(i), toY(d.v)));
+  ctx.lineTo(toX(data.length-1), pad.t+iH);
+  ctx.lineTo(toX(0), pad.t+iH);
+  ctx.fillStyle = grad; ctx.fill();
+
+  // Smooth line
+  ctx.beginPath();
+  ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+  data.forEach((d,i) => i===0 ? ctx.moveTo(toX(i),toY(d.v)) : ctx.lineTo(toX(i),toY(d.v)));
+  ctx.stroke();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RL PANEL
+// ══════════════════════════════════════════════════════════════════
+function updateRLDecision(dec) {
+  S.rlDecision = dec;
+  setText('rl-arm',  dec.greenArm ? dec.greenArm.toUpperCase() : '—');
+  setText('rl-dur',  dec.phaseDuration != null ? dec.phaseDuration + 's' : '—');
+  setText('rl-conf', dec.confidence != null ? dec.confidence.toFixed(3) : '—');
+  setText('rl-fb',   dec.fallbackUsed ? '⚠ Yes' : 'No');
+  setText('rl-reason', dec.reasoning || '—');
+  renderQBars(dec.allQValues || []);
+}
+
+const Q_LABELS = ['N 15s','N 30s','S 15s','S 30s','E 15s','E 30s','W 15s','W 30s'];
+
+function renderQBars(qvals) {
+  if (!qvals.length) return;
+  const maxQ = Math.max(...qvals.map(Math.abs), 0.01);
+  const maxIdx = qvals.indexOf(Math.max(...qvals));
+  document.getElementById('q-bars').innerHTML = qvals.map((q,i) => {
+    const pct = ((Math.abs(q)/maxQ)*100).toFixed(1);
+    const isMax = i === maxIdx;
+    const col = isMax ? 'var(--accent)' : 'var(--border)';
+    return `<div style="display:grid;grid-template-columns:60px 1fr 50px;gap:8px;align-items:center;margin-bottom:5px">
+      <span style="font-size:11px;color:${isMax?'var(--accent)':'var(--muted)'}">${Q_LABELS[i]}</span>
+      <div class="q-bar-track"><div class="q-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      <span style="font-size:11px;text-align:right;color:${isMax?'var(--accent)':'var(--muted)'}">${q.toFixed(3)}</span>
+    </div>`;
+  }).join('');
+}
+
+async function pollRLStatus() {
+  try {
+    const r = await fetch(ENDPOINTS.ai + '/ai/rl/status');
+    if (!r.ok) return;
+    const d = await r.json();
+    S.rlStatus = d;
+    setText('rl-loaded',    d.model_loaded ? '🟢 Loaded' : '🔴 Not found');
+    setText('rl-total-dec', d.total_decisions ?? '—');
+  } catch(_) {}
+}
+
+async function pollRLStats() {
+  try {
+    const r = await fetch(ENDPOINTS.backend + '/api/signal-decisions/stats');
+    if (!r.ok) return;
+    const d = await r.json();
+    S.rlStats = d;
+    setText('rl-usage',    d.modelUsageRate != null ? d.modelUsageRate.toFixed(1) + '%' : '—');
+    setText('rl-fallbacks', d.fallbackCount ?? '—');
+  } catch(_) {}
+}
+
+async function reloadRLModel() {
+  try {
+    const r = await fetch(ENDPOINTS.ai + '/ai/rl/reload-model', {method:'POST'});
+    const d = await r.json();
+    alert(d.message || 'Done');
+  } catch(e) { alert('Reload failed: ' + e); }
+}
+
+async function openDecisionHistory() {
+  try {
+    const r = await fetch(ENDPOINTS.backend + '/api/signal-decisions/latest');
+    const data = await r.json();
+    const tbody = document.getElementById('hist-body');
+    tbody.innerHTML = data.slice(0,20).map(d => `
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px 10px">${d.timestamp||'—'}</td>
+        <td style="padding:6px 10px;color:var(--green);font-weight:700">${(d.greenArm||'').toUpperCase()}</td>
+        <td style="padding:6px 10px;text-align:center">${d.phaseDuration||'—'}s</td>
+        <td style="padding:6px 10px;text-align:center">${d.confidence!=null?d.confidence.toFixed(3):'—'}</td>
+        <td style="padding:6px 10px;text-align:center">${d.fallbackUsed?'<span class="badge badge-yellow">Yes</span>':''}</td>
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted)">No decisions yet</td></tr>';
+    document.getElementById('hist-modal').classList.add('open');
+  } catch(e) {}
+}
+function closeModal() { document.getElementById('hist-modal').classList.remove('open'); }
+
+// ══════════════════════════════════════════════════════════════════
+// TRAFFIC CONTROL PANEL
+// ══════════════════════════════════════════════════════════════════
+let lastCmdTime = null;
+let pendingCmdVal = null;
+
+function ratePreview(v) { setText('rate-val', v + ' veh/min'); }
+
+async function applyRate() {
+  const rate = parseInt(document.getElementById('rate-slider').value);
+  await postSim('/api/sim/spawn-rate', {rate}, 'btn-rate');
+  setLastCmd('SET_SPAWN_RATE=' + rate);
+}
+
+async function applyMode() {
+  const mode = document.querySelector('input[name="smode"]:checked').value;
+  await postSim('/api/sim/set-mode', {mode}, 'btn-mode');
+  setLastCmd('SET_MODE=' + mode);
+}
+
+async function simAction(type) {
+  const map = {emergency:['spawn-emergency','btn-emg'],flagged:['spawn-flagged','btn-flg'],reset:['reset','btn-rst']};
+  const [ep, btnId] = map[type];
+  await postSim('/api/sim/' + ep, {}, btnId);
+  setLastCmd(ep.toUpperCase().replace('-','_'));
+  if (type === 'emergency') {
+    const btn = document.getElementById(btnId);
+    btn.style.background = 'var(--yellow)';
+    setTimeout(() => { btn.style.background = ''; }, 3000);
+  }
+}
+
+async function postSim(path, body, btnId) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = true;
+  try {
+    await fetch(ENDPOINTS.backend + path, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+  } catch(e) {}
+  setTimeout(() => { btn.disabled = false; }, 500);
+  pollCmdStatus();
+}
+
+function setLastCmd(label) {
+  setText('last-cmd', label);
+  setText('cmd-status', '⏳ Pending');
+  lastCmdTime = Date.now();
+}
+
+async function pollCmdStatus() {
+  try {
+    const r = await fetch(ENDPOINTS.backend + '/api/sim/commands/latest');
+    if (r.status === 204) {
+      setText('cmd-status', '✅ Applied');
+    } else if (r.ok) {
+      setText('cmd-status', '⏳ Pending');
+      setTimeout(pollCmdStatus, 2000);
+    }
+  } catch(_) {}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// AI SOURCE SELECTOR
+// ══════════════════════════════════════════════════════════════════
+let currentSrc = 'simulation';
+
+function handleSourceChange(el) {
+  currentSrc = el.value;
+  document.getElementById('src-camera').style.display = currentSrc==='camera' ? 'flex' : 'none';
+  document.getElementById('src-video').style.display  = currentSrc==='video'  ? 'block' : 'none';
+}
+
+async function applySource() {
+  const spinner = document.getElementById('src-switch-spinner');
+  const errEl   = document.getElementById('src-error');
+  spinner.style.display = 'inline-block';
+  errEl.style.display   = 'none';
+
+  let body = {source: currentSrc};
+  if (currentSrc === 'camera') {
+    body.camera_index = parseInt(document.getElementById('cam-index').value);
+  } else if (currentSrc === 'video') {
+    const sel  = document.getElementById('video-select').value;
+    const path = document.getElementById('video-path').value.trim();
+    body.video_path = path || sel;
+  }
+
+  try {
+    const r = await fetch(ENDPOINTS.ai + '/ai/source/switch', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Switch failed');
+    setTimeout(() => { spinner.style.display='none'; pollSourceStatus(); }, 1000);
+  } catch(e) {
+    spinner.style.display = 'none';
+    errEl.textContent = '❌ ' + e.message;
+    errEl.style.display = 'block';
+    setTimeout(() => { errEl.style.display='none'; }, 3000);
+  }
+}
+
+async function pollSourceStatus() {
+  try {
+    const r = await fetch(ENDPOINTS.ai + '/ai/source/status');
+    if (!r.ok) return;
+    const d = await r.json();
+    const icons = {simulation:'🟢',camera:'📷',video:'🎬'};
+    setText('src-status', (icons[d.source]||'⚫') + ' ' + (d.source||'?').toUpperCase() + ' mode active');
+    setText('src-frames', d.frame_count ?? 0);
+  } catch(_) {}
+}
+
+async function loadAvailableVideos() {
+  try {
+    const r = await fetch(ENDPOINTS.ai + '/ai/source/available-videos');
+    if (!r.ok) return;
+    const d = await r.json();
+    const sel = document.getElementById('video-select');
+    (d.videos || []).forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  } catch(_) {}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// COLLAPSIBLE
+// ══════════════════════════════════════════════════════════════════
+function toggleSection(id) {
+  const body   = document.getElementById(id + '-body');
+  const toggle = document.getElementById(id + '-toggle');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  body.classList.toggle('closed', isOpen);
+  toggle.textContent = isOpen ? '▶' : '▼';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UTIL
+// ══════════════════════════════════════════════════════════════════
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FALLBACK HTTP POLLING (when WS is down)
+// ══════════════════════════════════════════════════════════════════
+async function httpPoll() {
+  if (S.connected) return;
+  try {
+    const r = await fetch(ENDPOINTS.backend + '/api/dashboard/stats');
+    if (r.ok) updateStats(await r.json());
+    const r2 = await fetch(ENDPOINTS.backend + '/api/dashboard/detections/live');
+    if (r2.ok) updateDetections(await r2.json());
+  } catch(_) {}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+connectWS();
+loadAvailableVideos();
+
+setInterval(pollRLStatus,   5000);
+setInterval(pollRLStats,    5000);
+setInterval(pollSourceStatus, 3000);
+setInterval(httpPoll,       2000);
+
+pollRLStatus();
+pollRLStats();
+pollSourceStatus();
+renderArmBars();
+renderCountChart();
+</script>
+</body>
+</html>

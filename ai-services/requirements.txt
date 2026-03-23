@@ -1,16 +1,21 @@
+# ── Existing AI-service dependencies ─────────────────────────────────────────
 fastapi
 uvicorn[standard]
 python-multipart
-# Add other dependencies if you find them missing later
-
 opencv-python
 numpy
 ultralytics
 easyocr
 httpx
 requests
-fastapi
-uvicorn[standard]
-# Add your model dependencies if needed, e.g.:
-# torch
-# opencv-python
+
+# ── SUMO-RL / RL Traffic Agent (synapse_traffic_agent.py) ────────────────────
+# Install SUMO separately: https://sumo.dlr.de/docs/Installing/index.html
+# Then set SUMO_HOME env variable pointing to the SUMO install directory.
+
+sumo-rl>=1.4.5           # OpenAI Gym wrapper for SUMO simulations
+stable-baselines3>=2.3.0 # PPO and other RL algorithms
+sb3-contrib              # Extra SB3 utilities (optional but useful)
+gymnasium>=0.29.0        # Gym API (SB3 v2 requires gymnasium, not gym)
+tensorboard              # Training visualisation  →  tensorboard --logdir ./logs
+rich                     # Progress bars in training output

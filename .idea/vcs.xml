@@ -2,9 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-<<<<<<< HEAD
-    <mapping directory="$PROJECT_DIR$" vcs="Git" />
-=======
->>>>>>> 48bccc1 (incomplete test files)
+    <mapping directory="$PROJECT_DIR$/simulation/Traffic-Management-Using-AI" vcs="Git" />
   </component>
 </project>

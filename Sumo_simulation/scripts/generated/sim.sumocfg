@@ -1,0 +1,10 @@
+<configuration>
+    <input>
+        <net-file value="/Users/akash/Desktop/minor/Sumo_simulation/scripts/generated/intersection.net.xml"/>
+        <route-files value="/Users/akash/Desktop/minor/Sumo_simulation/scripts/generated/routes.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <step-length value="1.0"/>
+    </time>
+</configuration>

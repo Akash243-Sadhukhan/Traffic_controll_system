@@ -36,18 +36,12 @@ $ACTIVATE_SCRIPT
 
 # Install Requirements
 if [ -f "requirements.txt" ]; then
-<<<<<<< HEAD
-    echo "Installing dependencies..."
-=======
     echo "Installing root dependencies..."
->>>>>>> 48bccc1 (incomplete test files)
     pip install -r requirements.txt
 else
     echo "requirements.txt not found!"
 fi
 
-<<<<<<< HEAD
-=======
 # Install AI-services Requirements
 if [ -f "ai-services/requirements.txt" ]; then
     echo "Installing AI-services dependencies..."
@@ -56,6 +50,5 @@ else
     echo "ai-services/requirements.txt not found!"
 fi
 
->>>>>>> 48bccc1 (incomplete test files)
 echo "Setup complete! To activate the environment manually, run:"
 echo "$ACTIVATE_SCRIPT"

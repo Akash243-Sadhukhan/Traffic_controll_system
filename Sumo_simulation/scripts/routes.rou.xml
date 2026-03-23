@@ -1,0 +1,7 @@
+<routes>
+    <vType id="passenger" vClass="passenger" guiShape="passenger" length="5.0" minGap="2.5" maxSpeed="50.0" probability="0.8"/>
+    <vType id="bus" vClass="bus" guiShape="bus" length="12.0" minGap="3.0" maxSpeed="30.0" probability="0.1"/>
+    <vType id="motorcycle" vClass="motorcycle" guiShape="motorcycle" length="2.2" minGap="1.5" maxSpeed="60.0" probability="0.1"/>
+    <vType id="emergency" vClass="emergency" guiShape="emergency" length="6.5" minGap="2.5" maxSpeed="80.0" color="255,255,0"/>
+    <vType id="flagged" vClass="passenger" guiShape="passenger" length="5.0" minGap="2.5" maxSpeed="50.0" color="255,0,0"/>
+</routes>

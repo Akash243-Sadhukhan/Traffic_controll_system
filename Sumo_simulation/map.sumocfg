@@ -1,0 +1,11 @@
+<configuration>
+    <input>
+        <net-file value="maps/test.net.xml"/>
+        <route-files value="maps/trips.trips.xml"/>
+        <additional-files value="maps/map.poly.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+    </time>
+</configuration>

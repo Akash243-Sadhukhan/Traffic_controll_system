@@ -4,7 +4,65 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3d44193a-814f-410f-a8e4-665d1b8bc262" name="Changes" comment="" />
+    <list default="true" id="3d44193a-814f-410f-a8e4-665d1b8bc262" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/map.sumocfg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/maps/map.osm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/maps/map.poly.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/maps/map.rou.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/maps/osmNetconvert.typ.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/maps/randomTrips.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/maps/test.net.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/maps/trips.trips.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Sumo_simulation/maps/typemap.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ai-services/src/ocr_ensemble.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/minor.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/minor.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-services/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/ai-services/src/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-services/src/orc_textdetection.py" beforeDir="false" afterPath="$PROJECT_DIR$/ai-services/src/orc_textdetection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-services/src/processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/ai-services/src/processor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai-services/src/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/ai-services/src/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/src/main/java/com/traffic/backend_services/api/DetectionRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/src/main/java/com/traffic/backend_services/api/DetectionRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/src/main/java/com/traffic/backend_services/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/src/main/java/com/traffic/backend_services/exception/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-services/src/main/java/com/traffic/backend_services/service/DetectionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend-services/src/main/java/com/traffic/backend_services/service/DetectionService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/car.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/car_object_detattion.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_set/._useage" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_set/useage" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_25240.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_26700.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_26740.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_26760.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_26780.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_26880.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_27260.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_27280.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_27560.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_27840.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_27900.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_28340.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_28520.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_29100.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_29460.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_29480.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_29520.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_29540.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_29840.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_29880.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_29980.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_30000.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_30140.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_30180.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_30700.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_30740.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_31280.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_31480.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_sets/car/data/testing_images/vid_5_31500.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/object_detaction.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup_env.sh" beforeDir="false" afterPath="$PROJECT_DIR$/setup_env.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yolov11.ipynb" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -22,27 +80,28 @@
     <commands />
     <urls />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 5
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
   <component name="ProjectId" id="3Abl1rd2uNf7mTA3TWdrWMZEOzN" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "/Users/akash/Desktop/minor"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Rebasing main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/akash/Desktop/minor&quot;
   },
-  "keyToStringList": {
-    "stardust.markdown.MarkdownSplitEditorSuppressor:keyList": []
+  &quot;keyToStringList&quot;: {
+    &quot;stardust.markdown.MarkdownSplitEditorSuppressor:keyList&quot;: []
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
