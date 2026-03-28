@@ -1,0 +1,74 @@
+.traffic-map {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.traffic-map__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--bg-glass-border);
+}
+
+.traffic-map__header h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.traffic-map__mode {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 0.2rem 0.6rem;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.traffic-map__visual {
+  display: flex;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.traffic-map__svg {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1;
+}
+
+.signal-glow {
+  animation: signal-pulse 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px currentColor);
+}
+
+.signal-group.active text {
+  font-weight: 800 !important;
+}
+
+.traffic-map__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.15rem;
+  border-top: 1px solid var(--bg-glass-border);
+  font-size: 0.75rem;
+}
+
+.traffic-map__elapsed {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.traffic-map__pending {
+  font-family: var(--font-mono);
+  color: var(--accent-amber);
+  font-weight: 600;
+}

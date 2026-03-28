@@ -1,0 +1,53 @@
+.live-chart {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.live-chart__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--bg-glass-border);
+}
+
+.live-chart__header h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.live-chart__points {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.live-chart__body {
+  padding: 1rem 0.5rem 0.5rem;
+}
+
+/* Tooltip */
+.chart-tooltip {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  backdrop-filter: blur(12px);
+}
+
+.chart-tooltip__time {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.chart-tooltip__item {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin: 0.1rem 0;
+}

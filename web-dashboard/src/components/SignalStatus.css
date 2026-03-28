@@ -1,0 +1,135 @@
+.signal-status {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.signal-status__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--bg-glass-border);
+}
+
+.signal-status__header h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.signal-status__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.signal-status__mode-badge {
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--bg-glass-border);
+}
+
+.signal-status__mode-badge.rl {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.2);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.1);
+}
+
+.signal-status__mode-badge.adaptive {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.signal-status__timer {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.signal-status__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+}
+
+.signal-light {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-glass);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.signal-light.active {
+  background: rgba(34, 197, 94, 0.06);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.signal-light__housing {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 6px;
+  background: #1e293b;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.signal-light__bulb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(100, 116, 139, 0.15);
+  transition: all var(--transition-base);
+}
+
+.signal-light__bulb.lit {
+  background: var(--bulb-color);
+}
+
+.signal-light__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.signal-light__lane {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.signal-light__state {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.signal-light__active-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--signal-green);
+  border-radius: 3px;
+  letter-spacing: 0.08em;
+}

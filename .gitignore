@@ -1,0 +1,13 @@
+# Python Virtual Environment
+ai-services/venv/
+venv/
+__pycache__/
+*.pyc
+
+# Mac System Files
+.DS_Store
+*/.DS_Store
+
+# Large Data/Log files
+*.log
+simulation/outputs/

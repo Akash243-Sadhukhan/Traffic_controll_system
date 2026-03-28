@@ -1,0 +1,26 @@
+# ── Core Framework ────────────────────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart
+websockets>=12.0
+pydantic>=2.0
+
+# ── AI / ML ───────────────────────────────────────────────────────────────────
+opencv-python>=4.9.0
+numpy>=1.26.0
+ultralytics>=8.1.0
+easyocr>=1.7.0
+
+# ── HTTP Client ───────────────────────────────────────────────────────────────
+httpx>=0.27.0
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy>=2.0.0
+aiosqlite>=0.20.0
+
+# ── Display / Terminal ────────────────────────────────────────────────────────
+rich>=13.7.0
+colorama>=0.4.6
+
+# ── MQTT (optional — only needed if using Mosquitto broker) ───────────────────
+# paho-mqtt>=2.0.0

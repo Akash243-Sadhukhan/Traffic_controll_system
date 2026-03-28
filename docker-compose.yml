@@ -1,0 +1,36 @@
+# docker-compose.yml — AI Traffic Management System
+# Run: docker-compose up --build
+
+services:
+
+  # ── AI Services (FastAPI + YOLO + Signal Controller) ───────────────────────
+  ai-services:
+    build: ./ai-services
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - SHOW_WINDOW=0
+      - DATABASE_URL=sqlite:///app/traffic.db
+      - DEBUG=0
+    volumes:
+      - ./ai-services/models:/app/models
+      - ai_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── React Web Dashboard ────────────────────────────────────────────────────
+  web-dashboard:
+    build: ./web-dashboard
+    ports:
+      - "5173:80"
+    depends_on:
+      - ai-services
+    restart: unless-stopped
+
+volumes:
+  ai_data:
